@@ -89,16 +89,17 @@ class LLMService:
                 
                 for model_name in models_to_try:
                     try:
-                        logger.info(f"Trying Gemini model: '{model_name}'...")
+                        logger.info(f"Trying Gemini model: '{model_name}' (timeout: 15s)...")
                         client = ChatGoogleGenerativeAI(
                             google_api_key=settings.gemini_api_key,
                             model=model_name,
-                            temperature=0.0
+                            temperature=0.0,
+                            request_timeout=15
                         )
                         response = client.invoke(messages)
                         break
                     except Exception as err:
-                        logger.warning(f"Model '{model_name}' unavailable ({err}). Trying fallback model...")
+                        logger.warning(f"Model '{model_name}' failed/timed out ({err}). Trying next fallback model...")
                         last_error = err
                         
                 if response is None:
