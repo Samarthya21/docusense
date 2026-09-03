@@ -96,19 +96,24 @@ class LLMService:
                 response = client.invoke(messages)
             elif provider == "gemini":
                 from langchain_google_genai import ChatGoogleGenerativeAI
-                models_to_try = [settings.gemini_model, "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"]
+                models_to_try = [
+                    "gemini-3.5-flash",
+                    "gemini-3.6-flash",
+                    "gemini-3.5-flash-lite",
+                    "gemini-flash-latest"
+                ]
                 response = None
                 last_error = None
                 
                 for model_name in models_to_try:
                     try:
-                        logger.info(f"Trying Gemini model: '{model_name}' (timeout: 8s, max_retries: 1)...")
+                        logger.info(f"Trying Gemini model: '{model_name}' (timeout: 12s, max_retries: 1)...")
                         client = ChatGoogleGenerativeAI(
                             google_api_key=settings.gemini_api_key,
                             model=model_name,
                             temperature=0.0,
                             max_retries=1,
-                            request_timeout=8
+                            request_timeout=12
                         )
                         response = client.invoke(messages)
                         break
