@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# FAISS and local indexes
+faiss_index/
+uploads/
+*.faiss
+*.pkl
+
+# Environments and Credentials
+.env
+.venv
+venv/
+ENV/
+env/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/

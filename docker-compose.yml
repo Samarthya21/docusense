@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.5
+    container_name: docusense-redpanda
+    command:
+      - redpanda start
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: docusense-redis
+    ports:
+      - "6389:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build: .
+    container_name: docusense-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:29092
+      - FAISS_INDEX_PATH=/app/faiss_index
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+      - faiss_data:/app/faiss_index
+    depends_on:
+      - redis
+      - redpanda
+    env_file:
+      - .env
+
+  worker:
+    build: .
+    container_name: docusense-worker
+    command: python -m app.worker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDPANDA_BOOTSTRAP_SERVERS=redpanda:29092
+      - FAISS_INDEX_PATH=/app/faiss_index
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+      - faiss_data:/app/faiss_index
+    depends_on:
+      - redis
+      - redpanda
+    env_file:
+      - .env
+
+  ui:
+    build: .
+    container_name: docusense-ui
+    command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+    depends_on:
+      - api
+    env_file:
+      - .env
+
+volumes:
+  redpanda_data:
+  redis_data:
+  faiss_data:
