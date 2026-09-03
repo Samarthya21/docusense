@@ -8,9 +8,15 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    # OpenAI API configuration
+    # API Keys & Provider configuration
     openai_api_key: str = Field(default="mock_key")
+    gemini_api_key: str = Field(default="mock_key")
+    llm_provider: str = Field(default="gemini")
+    embedding_provider: str = Field(default="huggingface")
+    
+    # Model selections
     llm_model: str = Field(default="gpt-4o-mini")
+    gemini_model: str = Field(default="gemini-1.5-flash")
 
     # Service configurations
     redis_url: str = Field(default="redis://localhost:6379/0")

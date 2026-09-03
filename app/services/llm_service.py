@@ -10,14 +10,25 @@ class LLMService:
     def __init__(self):
         self.llm = None
 
-    def _get_llm(self) -> ChatOpenAI:
+    def _get_llm(self):
         if not self.llm:
-            # Initialize standard ChatOpenAI client
-            self.llm = ChatOpenAI(
-                api_key=settings.openai_api_key,
-                model=settings.llm_model,
-                temperature=0.0
-            )
+            provider = getattr(settings, "llm_provider", "gemini").lower()
+            if provider == "gemini":
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                logger.info(f"Initializing Free Google Gemini LLM client ({settings.gemini_model})...")
+                self.llm = ChatGoogleGenerativeAI(
+                    google_api_key=settings.gemini_api_key,
+                    model=settings.gemini_model,
+                    temperature=0.0
+                )
+            else:
+                from langchain_openai import ChatOpenAI
+                logger.info(f"Initializing ChatOpenAI client ({settings.llm_model})...")
+                self.llm = ChatOpenAI(
+                    api_key=settings.openai_api_key,
+                    model=settings.llm_model,
+                    temperature=0.0
+                )
         return self.llm
 
     def generate_answer(self, query: str, documents: list[Document]) -> str:

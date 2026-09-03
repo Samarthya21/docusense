@@ -8,9 +8,15 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-def get_embeddings() -> OpenAIEmbeddings:
-    # Read API key from settings (loaded from .env)
-    return OpenAIEmbeddings(openai_api_key=settings.openai_api_key)
+def get_embeddings():
+    if getattr(settings, "embedding_provider", "huggingface").lower() == "huggingface":
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        logger.info("Using 100% Free Local HuggingFace Embeddings (all-MiniLM-L6-v2)")
+        return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    else:
+        from langchain_openai import OpenAIEmbeddings
+        logger.info("Using OpenAI Embeddings")
+        return OpenAIEmbeddings(openai_api_key=settings.openai_api_key)
 
 def save_vector_store(documents: list[Document]) -> None:
     """
