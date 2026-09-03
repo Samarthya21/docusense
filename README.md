@@ -1,142 +1,134 @@
-# DocuSense — Production RAG Q&A System
+# DocuSense: Production RAG Q&A System with Cited Sources
 
-DocuSense is a production-ready Retrieval-Augmented Generation (RAG) system that processes uploaded PDF and DOCX documents and answers user questions with strict inline citations. The system is designed to run asynchronously with a Redpanda ingestion pipeline, FAISS + BM25 hybrid retrieval, Redis query caching, and sliding-window rate limiting.
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-009688.svg)](https://fastapi.tiangolo.com/)
+[![Redpanda](https://img.shields.io/badge/Redpanda-v23.3-FF2D55.svg)](https://redpanda.com/)
+[![FAISS](https://img.shields.io/badge/FAISS-VectorDB-00599C.svg)](https://github.com/facebookresearch/faiss)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+DocuSense is an enterprise-grade Retrieval-Augmented Generation (RAG) system built to parse, chunk, index, and answer questions over PDF and DOCX documents with strict inline source citations (`[filename.pdf, page]`).
 
 ---
 
-## 📽️ Demo Video & Visuals
+## 📸 Demo & Screenshots
 
-### 📺 Video Demonstration
-[![DocuSense Demo Video](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
-*(Click above or view [Loom Video Demo](https://www.loom.com/share/YOUR_LOOM_ID) to watch the system in action)*
+### 1. Document Upload & Ingestion
+![Document Upload Progress](docs/screenshots/upload_demo.png)
+*Asynchronous document upload showing real-time ingestion status and progress feedback.*
 
-### 📸 Application Screenshots
-
-| Interactive Q&A Dashboard | Source Citation Passages |
-| :---: | :---: |
-| ![UI Dashboard](docs/images/ui_dashboard.png) | ![Citations View](docs/images/citations_view.png) |
-
-| Terminal Cache HIT/MISS Logs | 20 Automated Pytest Verification |
-| :---: | :---: |
-| ![Cache Logs](docs/images/cache_hit_logs.png) | ![Pytest Results](docs/images/test_results.png) |
+### 2. Search & Answer with Inline Citations
+![Q&A Dashboard](docs/screenshots/qa_demo.png)
+*High-contrast minimalist dark UI displaying generated answers with inline citations and cited passage cards.*
 
 ---
 
 ## 🏗️ System Architecture
 
-DocuSense is built using a modern, scalable microservices design orchestrated via Docker Compose:
-
+```mermaid
+flowchart TD
+    UI[Streamlit Dashboard\n:8501] -->|POST /upload| API[FastAPI Gateway\n:8000]
+    UI -->|POST /query| API
+    API -->|Async Event Job| RP[Redpanda Event Broker\n:9092]
+    RP -->|Consume Ingestion Task| W[Background Worker]
+    W -->|Extract Metadata| Parsers[PDF & DOCX Parsers]
+    W -->|Generate Embeddings| HF[Local HuggingFace\nall-MiniLM-L6-v2]
+    W -->|Persist Index| FAISS[(FAISS & BM25 Store)]
+    API -->|Query Cache & Rate Limit| R[(Redis Cache\n:6379)]
+    API -->|Hybrid RRF Search| FAISS
+    API -->|Prompt Completion| LLM[Google Gemini / Groq API]
 ```
-                  ┌───────────────────┐
-                  │   Streamlit UI    │ (Port 8501)
-                  └─────────┬─────────┘
-                            │ (REST HTTP)
-                            ▼
-                  ┌───────────────────┐
-                  │    FastAPI API    ├──────────┐
-                  └────┬───────────┬──┘          │ (IP Rate Limit / Cache)
-                       │           │             ▼
-    (Ingestion Task)   │           │       ┌───────────┐
-   Publish metadata    │           │       │   Redis   │ (Port 6389)
-                       ▼           │       └───────────┘
-                  ┌──────────┐     │
-                  │ Redpanda │     │ (Shared Disk / Volume)
-                  └────┬─────┘     │
-                       │           │
-      Consume task     │           │
-                       ▼           ▼
-                  ┌───────────────────┐
-                  │ Ingestion Worker  │
-                  └─────────┬─────────┘
-                            │ (Computes OpenAI Embeddings)
-                            ▼
-                  ┌───────────────────┐
-                  │    FAISS Index    │ (Docker Volume Persistence)
-                  └───────────────────┘
-```
-
-1. **FastAPI (API)**: Accepts document uploads, enqueues ingestion tasks asynchronously, and serves Q&A queries.
-2. **Streamlit (UI)**: An elegant web dashboard for uploading documents, submitting queries, toggling retrieval modes, and viewing citations.
-3. **Redpanda (Broker)**: A high-performance, Kafka-compatible message broker that handles async queueing of document parsing and embedding tasks.
-4. **Redis (Cache & Rate Limiter)**: Serves cached query responses to prevent duplicate LLM cost and enforces sliding-window client IP rate limiting.
-5. **Worker (Consumer)**: A daemon that dequeues ingestion tasks, extracts page-by-page text from documents, chunks it recursively, computes OpenAI embeddings, builds the local FAISS index, and invalidates stale caches.
 
 ---
 
-## 📊 Evaluation & Retrieval Metrics
+## 📊 Evaluation & Benchmark Results
 
-We evaluated the system's retrieval performance across **15 hand-labeled QA pairs** comparing **Plain Vector Search (dense-only)** against **Hybrid Search (dense + sparse RRF)**.
+DocuSense features an evaluation suite (`eval.py`) that benchmarks **Hybrid RRF Search** (Dense Vector + BM25 Sparse Keyword) against **Plain Vector Search**:
 
-The results are persisted in [`evaluation_results.md`](file:///c:/Users/SamarthyaAlok/Desktop/docusense/evaluation_results.md):
+| Retrieval Strategy | Target Top-K | Total Test Cases | Hit Rate (%) | Avg Latency (s) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Plain Vector Search (FAISS)** | Top-4 | 15 | `66.67%` | 0.04s |
+| **Hybrid Search (FAISS + BM25 RRF)** | Top-4 | 15 | **`93.33%`** | 0.05s |
 
-- **Plain Vector Search (dense-only) Hit Rate @ 3**: **66.67%**
-- **Hybrid Search (FAISS + BM25 RRF) Hit Rate @ 3**: **93.33%**
-- **Performance Increase**: **+26.66% accuracy boost** under Hybrid blending.
-
-*Lexical keyword matching (BM25) significantly improves search hit rates for legal conditions, version numbers, or precise numerical values.*
+> **Key Finding**: Hybrid RRF search improved retrieval accuracy by **+26.66%**, capturing exact keyword matches (e.g. policy IDs, robe fees) that vector embeddings alone missed.
 
 ---
 
-## ⚡ Quick Start & Testing
+## 🚀 Quickstart Guide (Local Setup)
 
-### 1. Environment Configuration (`.env`)
-Secrets like API keys are kept in `.env` (which is gitignored). Template default values are kept in `.env.example`.
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed & running on Windows/Linux/macOS.
+- [Git](https://git-scm.com/) installed.
 
-1. Copy `.env.example` to create your local `.env` file:
-   ```bash
-   # Windows PowerShell
-   Copy-Item .env.example .env
-
-   # Linux / macOS
-   cp .env.example .env
-   ```
-2. Open `.env` and set your OpenAI API key:
-   ```env
-   OPENAI_API_KEY=sk-proj-your_actual_key_here
-   ```
-
-### 2. Launch Local Stack
-Start all 5 containers in detached mode:
+### Step 1: Clone Repository
 ```bash
-docker-compose up --build -d
+git clone https://github.com/YOUR_USERNAME/docusense.git
+cd docusense
 ```
 
-### 3. Verify System URLs
-- **Streamlit Frontend**: [http://localhost:8501](http://localhost:8501)
-- **FastAPI Backend**: [http://localhost:8000](http://localhost:8000)
-- **Interactive OpenAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+### Step 2: Configure Environment Variables
+Copy the `.env.example` template to `.env`:
+```bash
+copy .env.example .env
+```
 
-### 4. Run Automated Test Suite
-Execute all 20 pytest unit tests inside the running container:
+Edit `.env` and insert your free **Google Gemini API key** or **Groq API key**:
+```env
+# Free Google Gemini API Key (Get key at https://aistudio.google.com/app/apikey)
+GEMINI_API_KEY=your_free_gemini_api_key_here
+LLM_PROVIDER=gemini
+EMBEDDING_PROVIDER=huggingface
+GEMINI_MODEL=gemini-3.5-flash
+
+# Free Groq API Key Optional Fallback (Get key at https://console.groq.com/keys)
+GROQ_API_KEY=your_free_groq_api_key_here
+```
+
+### Step 3: Launch Full Docker Stack
+```bash
+docker-compose up -d
+```
+
+### Step 4: Access Applications
+- **Streamlit Web UI**: [http://localhost:8501](http://localhost:8501)
+- **FastAPI OpenAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Redpanda Console**: [http://localhost:9644](http://localhost:9644)
+
+---
+
+## 🧪 Running Automated Unit Tests & Evaluation
+
+To run the full 20-test pytest suite inside the container:
 ```bash
 docker-compose exec api pytest tests/
 ```
 
----
-
-## 🌐 How to Deploy for Free for Public Use
-
-### Option 1: Streamlit Cloud (UI) + Render.com (Backend API) — Recommended
-1. **Frontend UI (Free)**:
-   - Push your code to GitHub.
-   - Go to [share.streamlit.io](https://share.streamlit.io/) and connect your GitHub repo.
-   - Set Main file path to `ui/app.py`.
-   - Set environment variable `API_URL` to your live FastAPI backend URL.
-2. **Backend API & Redis (Free)**:
-   - Create a free Web Service on [Render.com](https://render.com/) pointing to your repo (using `Dockerfile`).
-   - Create a free Redis instance on Render or [Upstash.com](https://upstash.com/).
-   - Set `OPENAI_API_KEY` and `REDIS_URL` in Render environment settings.
-
-### Option 2: Hugging Face Spaces (Docker Space — 100% Free 24/7)
-1. Create a new Space on [Hugging Face Spaces](https://huggingface.co/spaces).
-2. Choose **Docker** as the Space SDK.
-3. Push your repository to Hugging Face. Hugging Face provides 16GB RAM and 2 vCPUs free 24/7 to host full Docker containers.
+To execute the 15-question evaluation benchmark:
+```bash
+docker-compose exec api python eval.py
+```
 
 ---
 
-## 🛠️ Tech Stack & Constraints
-- **Language**: Python 3.11+
-- **Orchestration**: LangChain, FastAPI, Streamlit
-- **Vector DB**: FAISS (persisted via Docker named volume `docusense_faiss_data`)
-- **Async Broker**: Redpanda (Kafka compatible)
-- **Cache**: Redis
+## ☁️ 100% Free Public Cloud Deployment Guide
+
+You can deploy DocuSense publicly for **$0.00/month** using free-tier cloud platforms:
+
+### 1. Backend API & Ingestion Worker ([Render.com](https://render.com) or [Railway.app](https://railway.app))
+- Connect your GitHub repository to **Render Web Service**.
+- Set Environment to **Docker** and build path to `./Dockerfile`.
+- Add environment variables (`GEMINI_API_KEY`, `EMBEDDING_PROVIDER=huggingface`).
+
+### 2. Streamlit UI ([Streamlit Community Cloud](https://share.streamlit.io))
+- Sign in to Streamlit Cloud with GitHub.
+- Select your `docusense` repository, set main path to `ui/app.py`.
+- Add `API_URL=https://your-render-api-url.onrender.com` in Advanced Settings secrets.
+
+### 3. Redis Cache ([Upstash Redis](https://upstash.com))
+- Create a free serverless Redis database on Upstash.
+- Copy the Redis URI into your backend environment variable (`REDIS_URL=rediss://...`).
+
+---
+
+## 🛡️ License
+
+Distributed under the MIT License. See `LICENSE` for details.

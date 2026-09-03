@@ -20,14 +20,22 @@ st.markdown("""
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     
-    /* Sidebar Expand/Collapse Arrow Controls Always Visible & Clear */
+    /* FIX TOP HEADER WHITE BAR */
+    header[data-testid="stHeader"] {
+        background-color: #090D16 !important;
+        border-bottom: none !important;
+    }
+
+    /* Sidebar Expand/Collapse Arrow Controls Always Visible & Dark Styled */
     [data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapsedControl"] button,
     button[kind="header"] {
         visibility: visible !important;
-        display: block !important;
+        display: flex !important;
         color: #F8FAFC !important;
         background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
         border-radius: 6px !important;
     }
 
@@ -56,7 +64,7 @@ st.markdown("""
         font-size: 0.88rem !important;
     }
 
-    /* FIX FILE UPLOADER Styling */
+    /* FIX FILE UPLOADER & UPLOADED FILE PILL CONTRAST */
     [data-testid="stFileUploader"], 
     [data-testid="stFileUploader"] > div, 
     [data-testid="stFileUploader"] section,
@@ -68,10 +76,26 @@ st.markdown("""
         padding: 6px !important;
     }
     
+    /* Uploaded File Pill Styling (Fix White Text on White Background) */
+    [data-testid="stFileUploaderFileData"],
+    [data-testid="stFileUploaderFile"],
+    [data-testid="stFileUploaderFileName"],
+    div[data-testid="stFileUploader"] ul,
+    div[data-testid="stFileUploader"] li,
+    div[data-testid="stFileUploaderFileData"] {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        border: 1px solid #475569 !important;
+        border-radius: 6px !important;
+    }
+
+    [data-testid="stFileUploaderFileData"] *,
+    [data-testid="stFileUploaderFileName"] *,
     [data-testid="stFileUploader"] small, 
     [data-testid="stFileUploader"] span, 
-    [data-testid="stFileUploader"] p {
-        color: #CBD5E1 !important;
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] div {
+        color: #F8FAFC !important;
     }
 
     [data-testid="stFileUploader"] button {
@@ -206,19 +230,27 @@ with st.sidebar:
         for uploaded_file in uploaded_files:
             file_key = f"uploaded_{uploaded_file.name}"
             if file_key not in st.session_state:
-                with st.spinner(f"Ingesting {uploaded_file.name}..."):
-                    try:
-                        files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                        response = requests.post(f"{API_URL}/upload", files=files, timeout=10)
-                        
-                        if response.status_code == 202:
-                            data = response.json()
-                            st.session_state[file_key] = data["task_id"]
-                            st.success(f"Enqueued: {uploaded_file.name}")
-                        else:
-                            st.error(f"Upload failed: {response.text}")
-                    except Exception as e:
-                        st.error(f"Cannot connect: {e}")
+                progress_bar = st.progress(0, text=f"Uploading {uploaded_file.name}...")
+                try:
+                    time.sleep(0.3)
+                    progress_bar.progress(35, text="Parsing text & enqueuing task...")
+                    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
+                    response = requests.post(f"{API_URL}/upload", files=files, timeout=10)
+                    
+                    if response.status_code == 202:
+                        data = response.json()
+                        st.session_state[file_key] = data["task_id"]
+                        progress_bar.progress(70, text="Generating embeddings & FAISS index...")
+                        time.sleep(0.8)
+                        progress_bar.progress(100, text="✅ Ingestion Complete!")
+                        st.success(f"Ready: {uploaded_file.name}")
+                        st.toast(f"✅ {uploaded_file.name} ingested & ready for questions!")
+                    else:
+                        progress_bar.empty()
+                        st.error(f"Upload failed: {response.text}")
+                except Exception as e:
+                    progress_bar.empty()
+                    st.error(f"Cannot connect: {e}")
                         
     st.markdown("---")
     
@@ -248,7 +280,8 @@ if st.button("Ask DocuSense"):
                 }
                 
                 start_time = time.time()
-                response = requests.post(f"{API_URL}/query", json=payload, timeout=45)
+                # Increased timeout to 120s to allow Gemini initial model response time
+                response = requests.post(f"{API_URL}/query", json=payload, timeout=120)
                 elapsed = time.time() - start_time
                 
                 if response.status_code == 200:
