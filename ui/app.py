@@ -3,107 +3,133 @@ import requests
 import os
 import time
 
-# Page Config with a dark modern aesthetic
+# Page Configuration - Minimal & Clean
 st.set_page_config(
-    page_title="DocuSense - Production RAG Q&A",
-    page_icon="🔍",
+    page_title="DocuSense RAG",
+    page_icon="📄",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Apply premium modern custom CSS styles
+# High-Contrast, Minimalist Custom CSS
 st.markdown("""
 <style>
-    /* Base Container Styling */
+    /* Global Page Styling */
     .stApp {
-        background-color: #0B0F19;
-        color: #E2E8F0;
-        font-family: 'Inter', sans-serif;
+        background-color: #0F172A;
+        color: #F8FAFC;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Title and Header Typography */
-    h1 {
-        font-family: 'Outfit', sans-serif;
-        font-weight: 800;
-        background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1D4ED8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 1rem;
-    }
-    
-    /* Sidebar Layout Styling */
+    /* Sidebar Fixes: High-contrast readable text */
     section[data-testid="stSidebar"] {
-        background-color: #111827;
-        border-right: 1px solid #1F2937;
+        background-color: #1E293B !important;
+        border-right: 1px solid #334155 !important;
     }
     
-    /* Styled Answer Display Container */
-    .answer-box {
-        background-color: #111827;
-        border: 1px solid #1F2937;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-top: 1rem;
+    section[data-testid="stSidebar"] *, 
+    section[data-testid="stSidebar"] label, 
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] p {
+        color: #F1F5F9 !important;
+    }
+    
+    /* Typography */
+    h1, h2, h3, h4 {
+        color: #F8FAFC !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em;
+    }
+    
+    .subtitle {
+        color: #94A3B8;
+        font-size: 1rem;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* Citation tags inside the text */
-    .citation {
-        background-color: #1E3A8A;
-        color: #93C5FD;
-        padding: 0.15rem 0.4rem;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-left: 0.2rem;
     }
 
-    /* Customized Cards for Citation Sources */
-    .source-card {
-        background-color: #1F2937;
-        border: 1px solid #374151;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 0.8rem;
-        border-left: 4px solid #3B82F6;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .source-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+    /* Input Field Styling */
+    .stTextInput > div > div > input {
+        background-color: #1E293B !important;
+        color: #F8FAFC !important;
+        border: 1px solid #475569 !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
+        font-size: 1rem !important;
     }
     
-    .source-header {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #60A5FA;
-        margin-bottom: 0.4rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .stTextInput > div > div > input:focus {
+        border-color: #3B82F6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
     }
-    .source-body {
-        font-size: 0.9rem;
-        color: #D1D5DB;
+
+    /* Button Styling */
+    .stButton > button {
+        background-color: #2563EB !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        transition: background-color 0.2s ease-in-out !important;
+    }
+    
+    .stButton > button:hover {
+        background-color: #1D4ED8 !important;
+    }
+
+    /* Clean Answer Display Card */
+    .answer-card {
+        background-color: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        color: #F8FAFC;
+        line-height: 1.6;
+        font-size: 1.05rem;
+    }
+
+    /* Citation Source Card */
+    .citation-card {
+        background-color: #1E293B;
+        border-left: 4px solid #3B82F6;
+        border-radius: 6px;
+        padding: 14px 18px;
+        margin-bottom: 12px;
+    }
+    
+    .citation-header {
+        color: #60A5FA;
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin-bottom: 6px;
+    }
+    
+    .citation-body {
+        color: #E2E8F0;
+        font-size: 0.92rem;
         line-height: 1.5;
-        font-style: italic;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Fetch backend API URL from environment
+# API Endpoint URL
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 # App Header
 st.title("DocuSense RAG Q&A")
-st.markdown("Retrieval-Augmented Generation system over PDFs & DOCXs with dense-sparse hybrid search.")
+st.markdown('<p class="subtitle">Ask questions over uploaded PDF/DOCX documents with cited sources.</p>', unsafe_allow_html=True)
 
-# Sidebar Configuration Layout
+# Sidebar Controls
 with st.sidebar:
-    st.image("https://img.icons8.com/clouds/200/000000/documents.png", width=100)
-    st.header("Upload Center")
+    st.title("📄 Document Center")
+    st.markdown("Upload documents to build your vector search index.")
+    
     uploaded_files = st.file_uploader(
-        "Upload PDF/DOCX Documents",
+        "Upload PDF or DOCX files",
         type=["pdf", "docx"],
         accept_multiple_files=True
     )
@@ -112,7 +138,7 @@ with st.sidebar:
         for uploaded_file in uploaded_files:
             file_key = f"uploaded_{uploaded_file.name}"
             if file_key not in st.session_state:
-                with st.spinner(f"Ingesting {uploaded_file.name}..."):
+                with st.spinner(f"Sending {uploaded_file.name}..."):
                     try:
                         files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
                         response = requests.post(f"{API_URL}/upload", files=files, timeout=10)
@@ -120,42 +146,44 @@ with st.sidebar:
                         if response.status_code == 202:
                             data = response.json()
                             st.session_state[file_key] = data["task_id"]
-                            st.toast(f"✅ Enqueued {uploaded_file.name}! Task ID: {data['task_id'][:8]}...", icon="📥")
+                            st.success(f"Enqueued: {uploaded_file.name}")
                         else:
-                            st.error(f"Failed to upload {uploaded_file.name}: {response.text}")
+                            st.error(f"Upload failed: {response.text}")
                     except Exception as e:
-                        st.error(f"Error connecting to backend: {e}")
-        
+                        st.error(f"Cannot connect to server: {e}")
+                        
     st.divider()
-    st.header("Search Parameters")
-    use_hybrid = st.toggle("Enable Hybrid Search", value=True, help="Fuses dense FAISS search and sparse BM25 search using Reciprocal Rank Fusion.")
-    k_chunks = st.slider("Top-k Chunks (Context size)", min_value=1, max_value=10, value=4)
+    
+    st.subheader("⚙️ Search Configuration")
+    use_hybrid = st.toggle("Hybrid Search (FAISS + BM25)", value=True, help="Combines semantic vector search with keyword search using RRF ranking.")
+    k_chunks = st.slider("Context Chunks (Top-K)", min_value=1, max_value=10, value=4)
     
     st.divider()
-    # Health Indicators
-    st.subheader("System Health")
+    
+    # System Status Check
+    st.subheader("🟢 System Readiness")
     try:
         health_resp = requests.get(f"{API_URL}/health", timeout=3)
         if health_resp.status_code == 200:
             health = health_resp.json()
             if health.get("status") == "ok":
-                st.success("🟢 All services online")
+                st.success("Backend API & Redis: Healthy")
             else:
-                st.warning("⚠️ Component issue detected")
+                st.warning("Backend API Online (Dependencies degraded)")
         else:
-            st.error("🔴 Offline")
+            st.error("Backend Status Degraded")
     except Exception:
-        st.error("🔴 Offline (No connection)")
+        st.error("Backend Disconnected")
 
-# Main Query Panel
-st.subheader("Interactive Query Interface")
-question = st.text_input("Ask a question about the uploaded documents:", placeholder="e.g., What are the terms of the agreement?")
+# Main Interface
+st.subheader("Search & Ask Questions")
+question = st.text_input("Enter your question:", placeholder="e.g., What is the termination clause notice period?")
 
-if st.button("Ask DocuSense", type="primary"):
+if st.button("Ask DocuSense"):
     if not question.strip():
-        st.warning("Please type a valid question.")
+        st.warning("Please enter a question.")
     else:
-        with st.spinner("Analyzing context and generating answer..."):
+        with st.spinner("Searching document index..."):
             try:
                 payload = {
                     "question": question,
@@ -163,7 +191,6 @@ if st.button("Ask DocuSense", type="primary"):
                     "k": k_chunks
                 }
                 
-                # Execute REST call
                 start_time = time.time()
                 response = requests.post(f"{API_URL}/query", json=payload, timeout=30)
                 elapsed = time.time() - start_time
@@ -173,16 +200,22 @@ if st.button("Ask DocuSense", type="primary"):
                     answer = data.get("answer", "")
                     sources = data.get("sources", [])
                     
-                    # 1. Answer Card
-                    st.markdown("### Answer")
-                    st.markdown(f'<div class="answer-box">{answer}</div>', unsafe_allow_html=True)
-                    st.caption(f"Generated in {elapsed:.2f} seconds")
+                    # Display Answer
+                    st.markdown("#### Answer")
+                    st.markdown(f'<div class="answer-card">{answer}</div>', unsafe_allow_html=True)
+                    st.caption(f"Retrieved and generated in {elapsed:.2f} seconds.")
                     
-                    # 2. Citation details Card
-                    st.divider()
-                    st.markdown("### Cited Document Passages")
+                    # Display Sources / Citations
+                    st.markdown("#### Cited Passages")
                     if not sources:
-                        st.info("No sources retrieved for this answer.")
+                        st.info("No text passages were retrieved matching this query.")
+                        if "cannot find the answer" in answer.lower():
+                            st.warning(
+                                "💡 **Why no results?** If you uploaded a document recently, please verify that your "
+                                "`OPENAI_API_KEY` in `.env` is valid and has active credit balance. "
+                                "If the API key is missing or quota is exhausted (`credit_balance_exhausted`), document embeddings cannot be generated. "
+                                "Check worker logs using: `docker-compose logs -f worker`."
+                            )
                     else:
                         for idx, source in enumerate(sources):
                             src_name = source.get("source", "unknown")
@@ -190,14 +223,16 @@ if st.button("Ask DocuSense", type="primary"):
                             content = source.get("content", "")
                             
                             st.markdown(f"""
-                            <div class="source-card">
-                                <div class="source-header">[{idx + 1}] {src_name} - Page/Section: {page_or_section}</div>
-                                <div class="source-body">"{content}"</div>
+                            <div class="citation-card">
+                                <div class="citation-header">[{idx + 1}] {src_name} (Page/Section: {page_or_section})</div>
+                                <div class="citation-body">"{content}"</div>
                             </div>
                             """, unsafe_allow_html=True)
+                            
                 elif response.status_code == 429:
-                    st.error("⚠️ Rate limit exceeded! You have submitted too many requests recently. Please wait a minute and retry.")
+                    st.error("⚠️ Rate limit exceeded! Too many requests submitted per minute. Please wait before asking again.")
                 else:
-                    st.error(f"API Error: Status {response.status_code} - {response.text}")
+                    st.error(f"API Error ({response.status_code}): {response.text}")
+                    
             except Exception as e:
-                st.error(f"Failed to submit query. Could not connect to API server: {e}")
+                st.error(f"Could not submit query: {e}")
