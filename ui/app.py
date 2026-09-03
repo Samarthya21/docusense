@@ -3,7 +3,7 @@ import requests
 import os
 import time
 
-# Page Configuration - Clean & Modern
+# Page Config
 st.set_page_config(
     page_title="DocuSense RAG",
     page_icon="📄",
@@ -11,157 +11,133 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Premium Minimalist Theme (High Contrast & Elegant Typography)
+# Custom High-Contrast CSS Fixes
 st.markdown("""
 <style>
-    /* Hide default Streamlit top header & footer */
+    /* Hide Streamlit default header elements */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
 
-    /* Main App Background */
+    /* Base App Styling */
     .stApp {
         background-color: #090D16;
         color: #F8FAFC;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Sidebar Styling */
+    /* Sidebar Layout */
     section[data-testid="stSidebar"] {
         background-color: #111827 !important;
         border-right: 1px solid #1E293B !important;
     }
     
-    section[data-testid="stSidebar"] * {
-        color: #E2E8F0 !important;
-    }
-    
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3 {
-        color: #F8FAFC !important;
-        font-weight: 700 !important;
+    section[data-testid="stSidebar"] *, 
+    section[data-testid="stSidebar"] label, 
+    section[data-testid="stSidebar"] p {
+        color: #F1F5F9 !important;
     }
 
-    /* File Uploader Custom Dark Theme */
-    [data-testid="stFileUploader"] {
+    /* FIX FILE UPLOADER WHITE BACKGROUND */
+    [data-testid="stFileUploader"], 
+    [data-testid="stFileUploader"] > div, 
+    [data-testid="stFileUploader"] section,
+    [data-testid="stFileUploaderDropzone"] {
         background-color: #1E293B !important;
+        color: #F8FAFC !important;
         border: 1px dashed #475569 !important;
-        border-radius: 10px !important;
-        padding: 12px !important;
+        border-radius: 8px !important;
     }
     
-    [data-testid="stFileUploader"] * {
-        color: #94A3B8 !important;
+    [data-testid="stFileUploader"] small, 
+    [data-testid="stFileUploader"] span, 
+    [data-testid="stFileUploader"] p {
+        color: #CBD5E1 !important;
     }
 
-    /* Headings */
-    h1, h2, h3, h4 {
+    [data-testid="stFileUploader"] button {
+        background-color: #334155 !important;
         color: #F8FAFC !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.02em !important;
+        border: 1px solid #475569 !important;
+        border-radius: 6px !important;
+    }
+
+    /* FIX INVISIBLE PLACEHOLDER TEXT */
+    .stTextInput > div > div > input {
+        background-color: #111827 !important;
+        color: #F8FAFC !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
+        font-size: 1rem !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: #94A3B8 !important;
+        opacity: 1 !important;
+    }
+    
+    .stTextInput > div > div > input::-webkit-input-placeholder {
+        color: #94A3B8 !important;
+        opacity: 1 !important;
     }
 
     .main-title {
         font-size: 2.2rem;
         font-weight: 800;
+        color: #38BDF8;
         margin-bottom: 0.2rem;
-        background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
     }
     
     .subtitle {
         color: #94A3B8;
-        font-size: 0.98rem;
-        margin-bottom: 1.8rem;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
     }
 
-    /* Question Input Box */
-    .stTextInput > div > div > input {
-        background-color: #111827 !important;
-        color: #F8FAFC !important;
-        border: 1px solid #334155 !important;
-        border-radius: 10px !important;
-        padding: 14px 18px !important;
-        font-size: 1rem !important;
-    }
-    
-    .stTextInput > div > div > input:focus {
-        border-color: #38BDF8 !important;
-        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
-    }
-
-    /* Ask Button */
+    /* Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%) !important;
+        background-color: #2563EB !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 8px !important;
-        padding: 12px 28px !important;
+        padding: 10px 24px !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
     }
 
-    /* Answer Card Container */
+    /* Cards */
     .answer-card {
         background-color: #111827;
         border: 1px solid #1E293B;
         border-left: 4px solid #38BDF8;
-        border-radius: 10px;
-        padding: 22px;
-        margin-top: 10px;
-        margin-bottom: 24px;
+        border-radius: 8px;
+        padding: 18px;
+        margin-top: 8px;
+        margin-bottom: 18px;
         color: #F8FAFC;
-        line-height: 1.7;
-        font-size: 1.02rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        line-height: 1.6;
     }
 
-    /* Citation Passages Card */
     .citation-card {
         background-color: #111827;
         border: 1px solid #1E293B;
-        border-radius: 8px;
-        padding: 16px 20px;
-        margin-bottom: 12px;
+        border-radius: 6px;
+        padding: 14px;
+        margin-bottom: 10px;
     }
     
     .citation-badge {
-        display: inline-block;
-        background-color: #1E293B;
         color: #38BDF8;
         font-weight: 700;
-        font-size: 0.82rem;
-        padding: 4px 10px;
-        border-radius: 6px;
-        margin-bottom: 10px;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
     }
     
     .citation-text {
         color: #CBD5E1;
-        font-size: 0.93rem;
-        line-height: 1.6;
-        font-style: italic;
-    }
-
-    /* Guidance Box */
-    .notice-card {
-        background-color: #1E1B4B;
-        border: 1px solid #3730A3;
-        border-radius: 8px;
-        padding: 16px 20px;
-        color: #C7D2FE;
-        font-size: 0.92rem;
-        margin-top: 15px;
+        font-size: 0.9rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -169,12 +145,28 @@ st.markdown("""
 # API Endpoint URL
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-# App Header
+# Main Page Header
 st.markdown('<div class="main-title">DocuSense RAG</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Ask questions over uploaded PDF/DOCX documents with cited sources.</div>', unsafe_allow_html=True)
 
-# Sidebar
+# Sidebar Layout (Moved System Status to TOP so it is immediately visible!)
 with st.sidebar:
+    st.markdown("### 🟢 System Status")
+    try:
+        health_resp = requests.get(f"{API_URL}/health", timeout=3)
+        if health_resp.status_code == 200:
+            health = health_resp.json()
+            if health.get("status") == "ok":
+                st.success("Backend Services: Online")
+            else:
+                st.warning("Backend Services: Degraded")
+        else:
+            st.error("Backend Degraded")
+    except Exception:
+        st.error("Backend Disconnected")
+        
+    st.divider()
+
     st.markdown("### 📄 Document Upload")
     uploaded_files = st.file_uploader(
         "Drop PDF or DOCX files here",
@@ -205,27 +197,14 @@ with st.sidebar:
     st.markdown("### ⚙️ Search Settings")
     use_hybrid = st.toggle("Hybrid Search (FAISS + BM25)", value=True, help="Combines vector search with keyword search using RRF ranking.")
     k_chunks = st.slider("Context Chunks (Top-K)", min_value=1, max_value=10, value=4)
-    
-    st.divider()
-    
-    # Backend Status
-    st.markdown("### 🟢 System Status")
-    try:
-        health_resp = requests.get(f"{API_URL}/health", timeout=3)
-        if health_resp.status_code == 200:
-            health = health_resp.json()
-            if health.get("status") == "ok":
-                st.success("Backend & Services Online")
-            else:
-                st.warning("Backend Online (Degraded services)")
-        else:
-            st.error("Backend Degraded")
-    except Exception:
-        st.error("Backend Disconnected")
 
-# Main Interface
+# Main Query Section
 st.markdown("### Search & Ask Questions")
-question = st.text_input("Question:", placeholder="e.g., What is the dress code for the convocation?", label_visibility="collapsed")
+question = st.text_input(
+    "Enter your question:", 
+    placeholder="e.g., What is the dress code for the convocation?",
+    key="user_question"
+)
 
 if st.button("Ask DocuSense"):
     if not question.strip():
@@ -257,14 +236,6 @@ if st.button("Ask DocuSense"):
                     st.markdown("#### Cited Passages")
                     if not sources:
                         st.info("No matching text passages were found.")
-                        if "cannot find the answer" in answer.lower():
-                            st.markdown("""
-                            <div class="notice-card">
-                                💡 <b>Setup Tip:</b> If your answer was not found, check your <code>.env</code> file to ensure 
-                                <code>GEMINI_API_KEY</code> contains your free Google AI Studio key (starts with <code>AIzaSy...</code>). 
-                                Free local embeddings (HuggingFace) have successfully processed your document!
-                            </div>
-                            """, unsafe_allow_html=True)
                     else:
                         for idx, source in enumerate(sources):
                             src_name = source.get("source", "unknown")
