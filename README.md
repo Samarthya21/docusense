@@ -13,11 +13,11 @@ DocuSense is an enterprise-grade Retrieval-Augmented Generation (RAG) system bui
 ## 📸 Demo & Screenshots
 
 ### 1. Document Upload & Ingestion
-![Document Upload Progress](docs/screenshots/upload_demo.png)
+![Document Upload Progress](https://github.com/user-attachments/assets/1e194185-7cb5-41ae-8930-e4c5199bb7c7)
 *Asynchronous document upload showing real-time ingestion status and progress feedback.*
 
 ### 2. Search & Answer with Inline Citations
-![Q&A Dashboard](docs/screenshots/qa_demo.png)
+![Q&A Dashboard](https://github.com/user-attachments/assets/0267e157-f7ba-4f98-a019-bc5f2e4c2e9f)
 *High-contrast minimalist dark UI displaying generated answers with inline citations and cited passage cards.*
 
 ---
