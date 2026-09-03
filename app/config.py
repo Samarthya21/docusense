@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # API Keys & Provider configuration
     openai_api_key: str = Field(default="mock_key")
     gemini_api_key: str = Field(default="mock_key")
+    groq_api_key: str = Field(default="mock_key")
     llm_provider: str = Field(default="gemini")
     embedding_provider: str = Field(default="huggingface")
     

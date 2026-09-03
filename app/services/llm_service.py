@@ -81,7 +81,20 @@ class LLMService:
                 HumanMessage(content=user_prompt)
             ]
             
-            if provider == "gemini":
+            if provider == "groq":
+                from langchain_openai import ChatOpenAI
+                groq_key = getattr(settings, "groq_api_key", os.getenv("GROQ_API_KEY", ""))
+                logger.info("Using 100% Free Groq LLM API (llama-3.1-8b-instant)...")
+                client = ChatOpenAI(
+                    api_key=groq_key,
+                    base_url="https://api.groq.com/openai/v1",
+                    model="llama-3.1-8b-instant",
+                    temperature=0.0,
+                    max_retries=1,
+                    request_timeout=10
+                )
+                response = client.invoke(messages)
+            elif provider == "gemini":
                 from langchain_google_genai import ChatGoogleGenerativeAI
                 models_to_try = [settings.gemini_model, "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"]
                 response = None
@@ -89,12 +102,13 @@ class LLMService:
                 
                 for model_name in models_to_try:
                     try:
-                        logger.info(f"Trying Gemini model: '{model_name}' (timeout: 15s)...")
+                        logger.info(f"Trying Gemini model: '{model_name}' (timeout: 8s, max_retries: 1)...")
                         client = ChatGoogleGenerativeAI(
                             google_api_key=settings.gemini_api_key,
                             model=model_name,
                             temperature=0.0,
-                            request_timeout=15
+                            max_retries=1,
+                            request_timeout=8
                         )
                         response = client.invoke(messages)
                         break
