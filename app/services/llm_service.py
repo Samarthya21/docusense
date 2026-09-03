@@ -122,7 +122,21 @@ class LLMService:
                         last_error = err
                         
                 if response is None:
-                    raise last_error
+                    groq_key = getattr(settings, "groq_api_key", os.getenv("GROQ_API_KEY", "")).strip()
+                    if groq_key and not groq_key.startswith("mock_") and not groq_key.startswith("your_"):
+                        logger.info("All Gemini models exhausted. Falling back to Groq API (llama-3.1-8b-instant)...")
+                        from langchain_openai import ChatOpenAI
+                        client = ChatOpenAI(
+                            api_key=groq_key,
+                            base_url="https://api.groq.com/openai/v1",
+                            model="llama-3.1-8b-instant",
+                            temperature=0.0,
+                            max_retries=1,
+                            request_timeout=10
+                        )
+                        response = client.invoke(messages)
+                    else:
+                        raise last_error
             else:
                 llm_client = self._get_llm()
                 response = llm_client.invoke(messages)
