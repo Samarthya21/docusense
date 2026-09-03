@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Model selections
     llm_model: str = Field(default="gpt-4o-mini")
-    gemini_model: str = Field(default="gemini-1.5-flash")
+    gemini_model: str = Field(default="gemini-3.6-flash")
 
     # Service configurations
     redis_url: str = Field(default="redis://localhost:6379/0")

@@ -35,6 +35,17 @@ class LLMService:
         if not documents:
             return "I cannot find the answer in the provided documents."
 
+        # Check if API key is valid / present
+        provider = getattr(settings, "llm_provider", "gemini").lower()
+        if provider == "gemini":
+            key = getattr(settings, "gemini_api_key", "").strip()
+            if not key or key in ["your_free_gemini_api_key_here", "mock_key", "your_openai_api_key_here"] or key.startswith("your_"):
+                return (
+                    f"⚠️ Please add your free Google Gemini API key to `.env` (`GEMINI_API_KEY=...`).\n"
+                    f"Get a key for $0.00 in 30 seconds at https://aistudio.google.com/app/apikey.\n\n"
+                    f"Local vector search successfully found {len(documents)} matching context passages from your document!"
+                )
+
         # Compile document contents and format headers to help the LLM cite easily
         context_blocks = []
         for idx, doc in enumerate(documents):
@@ -64,15 +75,55 @@ class LLMService:
         
         logger.info(f"Invoking LLM for query: '{query}'")
         try:
-            llm_client = self._get_llm()
+            provider = getattr(settings, "llm_provider", "gemini").lower()
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_prompt)
             ]
-            response = llm_client.invoke(messages)
-            return response.content.strip()
+            
+            if provider == "gemini":
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                models_to_try = [settings.gemini_model, "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"]
+                response = None
+                last_error = None
+                
+                for model_name in models_to_try:
+                    try:
+                        logger.info(f"Trying Gemini model: '{model_name}'...")
+                        client = ChatGoogleGenerativeAI(
+                            google_api_key=settings.gemini_api_key,
+                            model=model_name,
+                            temperature=0.0
+                        )
+                        response = client.invoke(messages)
+                        break
+                    except Exception as err:
+                        logger.warning(f"Model '{model_name}' unavailable ({err}). Trying fallback model...")
+                        last_error = err
+                        
+                if response is None:
+                    raise last_error
+            else:
+                llm_client = self._get_llm()
+                response = llm_client.invoke(messages)
+
+            if isinstance(response.content, str):
+                return response.content.strip()
+            elif isinstance(response.content, list):
+                text_parts = []
+                for part in response.content:
+                    if isinstance(part, dict):
+                        text_parts.append(part.get("text", ""))
+                    else:
+                        text_parts.append(str(part))
+                return "".join(text_parts).strip()
+            return str(response.content).strip()
         except Exception as e:
-            logger.error(f"Failed to query OpenAI Chat: {e}")
-            return f"Error generating answer: {e}"
+            logger.error(f"Failed to query LLM: {e}")
+            return (
+                f"⚠️ Error calling Gemini API. Please check your `GEMINI_API_KEY` in `.env` "
+                f"(Get a free key at https://aistudio.google.com/app/apikey).\n\n"
+                f"Local vector search successfully found {len(documents)} matching context passages from your document!"
+            )
 
 llm_service = LLMService()
