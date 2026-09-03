@@ -11,35 +11,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom High-Contrast CSS Fixes
+# Custom High-Contrast, Compact & Readable CSS
 st.markdown("""
 <style>
-    /* Hide Streamlit default header elements */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton {display:none;}
+    /* Hide top deploy button and decoration, BUT KEEP SIDEBAR EXPAND/COLLAPSE BUTTON VISIBLE! */
+    .stDeployButton { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    
+    /* Sidebar Expand/Collapse Arrow Controls Always Visible & Clear */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    button[kind="header"] {
+        visibility: visible !important;
+        display: block !important;
+        color: #F8FAFC !important;
+        background-color: #1E293B !important;
+        border-radius: 6px !important;
+    }
 
-    /* Base App Styling */
+    /* Base App Background */
     .stApp {
         background-color: #090D16;
         color: #F8FAFC;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Sidebar Layout */
+    /* Compact Sidebar Layout */
     section[data-testid="stSidebar"] {
         background-color: #111827 !important;
         border-right: 1px solid #1E293B !important;
+    }
+    
+    section[data-testid="stSidebar"] .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
     }
     
     section[data-testid="stSidebar"] *, 
     section[data-testid="stSidebar"] label, 
     section[data-testid="stSidebar"] p {
         color: #F1F5F9 !important;
+        font-size: 0.88rem !important;
     }
 
-    /* FIX FILE UPLOADER WHITE BACKGROUND */
+    /* FIX FILE UPLOADER Styling */
     [data-testid="stFileUploader"], 
     [data-testid="stFileUploader"] > div, 
     [data-testid="stFileUploader"] section,
@@ -48,6 +65,7 @@ st.markdown("""
         color: #F8FAFC !important;
         border: 1px dashed #475569 !important;
         border-radius: 8px !important;
+        padding: 6px !important;
     }
     
     [data-testid="stFileUploader"] small, 
@@ -63,28 +81,9 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    /* FIX INVISIBLE PLACEHOLDER TEXT */
-    .stTextInput > div > div > input {
-        background-color: #111827 !important;
-        color: #F8FAFC !important;
-        border: 1px solid #334155 !important;
-        border-radius: 8px !important;
-        padding: 12px 16px !important;
-        font-size: 1rem !important;
-    }
-    
-    .stTextInput > div > div > input::placeholder {
-        color: #94A3B8 !important;
-        opacity: 1 !important;
-    }
-    
-    .stTextInput > div > div > input::-webkit-input-placeholder {
-        color: #94A3B8 !important;
-        opacity: 1 !important;
-    }
-
+    /* BIGGER & HIGH VISIBILITY TYPOGRAPHY */
     .main-title {
-        font-size: 2.2rem;
+        font-size: 2.5rem;
         font-weight: 800;
         color: #38BDF8;
         margin-bottom: 0.2rem;
@@ -92,52 +91,81 @@ st.markdown("""
     
     .subtitle {
         color: #94A3B8;
-        font-size: 0.95rem;
-        margin-bottom: 1.5rem;
+        font-size: 1.05rem;
+        margin-bottom: 1.8rem;
     }
 
-    /* Buttons */
+    .section-header {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #F8FAFC;
+        margin-top: 1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    /* Input Field Styling */
+    .stTextInput > div > div > input {
+        background-color: #111827 !important;
+        color: #F8FAFC !important;
+        border: 1.5px solid #38BDF8 !important;
+        border-radius: 10px !important;
+        padding: 14px 18px !important;
+        font-size: 1.1rem !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: #94A3B8 !important;
+        opacity: 1 !important;
+        font-size: 1.05rem !important;
+    }
+
+    /* Action Button */
     .stButton > button {
         background-color: #2563EB !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 8px !important;
-        padding: 10px 24px !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        padding: 12px 28px !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
 
-    /* Cards */
+    /* BIGGER ANSWER CARD */
     .answer-card {
         background-color: #111827;
         border: 1px solid #1E293B;
-        border-left: 4px solid #38BDF8;
-        border-radius: 8px;
-        padding: 18px;
-        margin-top: 8px;
-        margin-bottom: 18px;
-        color: #F8FAFC;
-        line-height: 1.6;
+        border-left: 6px solid #38BDF8;
+        border-radius: 10px;
+        padding: 24px;
+        margin-top: 10px;
+        margin-bottom: 24px;
+        color: #FFFFFF;
+        line-height: 1.8;
+        font-size: 1.2rem;
+        font-weight: 500;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
     .citation-card {
         background-color: #111827;
         border: 1px solid #1E293B;
-        border-radius: 6px;
-        padding: 14px;
-        margin-bottom: 10px;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
     }
     
     .citation-badge {
         color: #38BDF8;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.92rem;
         margin-bottom: 6px;
     }
     
     .citation-text {
-        color: #CBD5E1;
-        font-size: 0.9rem;
+        color: #E2E8F0;
+        font-size: 1rem;
+        line-height: 1.6;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -149,25 +177,25 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 st.markdown('<div class="main-title">DocuSense RAG</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Ask questions over uploaded PDF/DOCX documents with cited sources.</div>', unsafe_allow_html=True)
 
-# Sidebar Layout (Moved System Status to TOP so it is immediately visible!)
+# Compact Sidebar Layout (Status -> Upload -> Settings)
 with st.sidebar:
-    st.markdown("### 🟢 System Status")
+    st.markdown("#### 🟢 System Status")
     try:
         health_resp = requests.get(f"{API_URL}/health", timeout=3)
         if health_resp.status_code == 200:
             health = health_resp.json()
             if health.get("status") == "ok":
-                st.success("Backend Services: Online")
+                st.success("Backend: Online")
             else:
-                st.warning("Backend Services: Degraded")
+                st.warning("Backend: Degraded")
         else:
             st.error("Backend Degraded")
     except Exception:
         st.error("Backend Disconnected")
         
-    st.divider()
+    st.markdown("---")
 
-    st.markdown("### 📄 Document Upload")
+    st.markdown("#### 📄 Document Upload")
     uploaded_files = st.file_uploader(
         "Drop PDF or DOCX files here",
         type=["pdf", "docx"],
@@ -190,20 +218,21 @@ with st.sidebar:
                         else:
                             st.error(f"Upload failed: {response.text}")
                     except Exception as e:
-                        st.error(f"Cannot connect to backend: {e}")
+                        st.error(f"Cannot connect: {e}")
                         
-    st.divider()
+    st.markdown("---")
     
-    st.markdown("### ⚙️ Search Settings")
+    st.markdown("#### ⚙️ Search Settings")
     use_hybrid = st.toggle("Hybrid Search (FAISS + BM25)", value=True, help="Combines vector search with keyword search using RRF ranking.")
     k_chunks = st.slider("Context Chunks (Top-K)", min_value=1, max_value=10, value=4)
 
 # Main Query Section
-st.markdown("### Search & Ask Questions")
+st.markdown('<div class="section-header">Search & Ask Questions</div>', unsafe_allow_html=True)
 question = st.text_input(
     "Enter your question:", 
     placeholder="e.g., What is the dress code for the convocation?",
-    key="user_question"
+    key="user_question",
+    label_visibility="collapsed"
 )
 
 if st.button("Ask DocuSense"):
@@ -227,13 +256,13 @@ if st.button("Ask DocuSense"):
                     answer = data.get("answer", "")
                     sources = data.get("sources", [])
                     
-                    # Output Answer Card
-                    st.markdown("#### Answer")
+                    # Output Answer Card - BIGGER & PROMINENT
+                    st.markdown('<div class="section-header">Answer</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="answer-card">{answer}</div>', unsafe_allow_html=True)
                     st.caption(f"Retrieved and generated in {elapsed:.2f} seconds.")
                     
                     # Output Citations / Sources
-                    st.markdown("#### Cited Passages")
+                    st.markdown('<div class="section-header">Cited Passages</div>', unsafe_allow_html=True)
                     if not sources:
                         st.info("No matching text passages were found.")
                     else:
