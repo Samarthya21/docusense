@@ -1,6 +1,7 @@
 import os
 import pickle
 import logging
+import gc
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
@@ -8,15 +9,33 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+_cached_embeddings = None
+
 def get_embeddings():
+    global _cached_embeddings
+    if _cached_embeddings is not None:
+        return _cached_embeddings
+
     if getattr(settings, "embedding_provider", "huggingface").lower() == "huggingface":
+        try:
+            import torch
+            torch.set_num_threads(1)
+            torch.set_num_interop_threads(1)
+        except Exception:
+            pass
         from langchain_community.embeddings import HuggingFaceEmbeddings
         logger.info("Using 100% Free Local HuggingFace Embeddings (all-MiniLM-L6-v2)")
-        return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        _cached_embeddings = HuggingFaceEmbeddings(
+            model_name="all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True}
+        )
     else:
         from langchain_openai import OpenAIEmbeddings
         logger.info("Using OpenAI Embeddings")
-        return OpenAIEmbeddings(openai_api_key=settings.openai_api_key)
+        _cached_embeddings = OpenAIEmbeddings(openai_api_key=settings.openai_api_key)
+
+    return _cached_embeddings
 
 def save_vector_store(documents: list[Document]) -> None:
     """
@@ -70,3 +89,5 @@ def save_vector_store(documents: list[Document]) -> None:
     except Exception as e:
         logger.error(f"Error saving documents to pickle backup: {e}")
         raise
+    finally:
+        gc.collect()
