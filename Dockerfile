@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install python packages
+# Copy requirements and install lightweight python packages
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
 
 # Copy application source code
 COPY . .
@@ -18,5 +18,5 @@ COPY . .
 # Expose ports (FastAPI on 8000, Streamlit on 8501)
 EXPOSE 8000 8501
 
-# Default command (will be overridden in docker-compose for UI and worker)
+# Default command
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

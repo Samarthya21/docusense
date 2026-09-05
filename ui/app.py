@@ -194,8 +194,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# API Endpoint URL
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+# API Endpoint URL (Read from env or Streamlit Secrets)
+API_URL = os.getenv("API_URL") or st.secrets.get("API_URL", "http://localhost:8000")
 
 # Main Page Header
 st.markdown('<div class="main-title">DocuSense RAG</div>', unsafe_allow_html=True)
@@ -205,10 +205,10 @@ st.markdown('<div class="subtitle">Ask questions over uploaded PDF/DOCX document
 with st.sidebar:
     st.markdown("#### 🟢 System Status")
     try:
-        health_resp = requests.get(f"{API_URL}/health", timeout=3)
+        health_resp = requests.get(f"{API_URL}/health", timeout=15)
         if health_resp.status_code == 200:
             health = health_resp.json()
-            if health.get("status") == "ok":
+            if health.get("status") in ["ok", "healthy"]:
                 st.success("Backend: Online")
             else:
                 st.warning("Backend: Degraded")
