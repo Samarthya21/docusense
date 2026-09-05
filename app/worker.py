@@ -16,6 +16,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def process_document(file_path: str, filename: str):
+    if not os.path.exists(file_path):
+        logger.error(f"File not found at path: {file_path}")
+        return
+    
+    # 1. Parse document page-by-page or section-by-section
+    parsed_docs = parse_document(file_path, filename)
+    
+    # 2. Chunk document text
+    chunks = chunk_documents(parsed_docs)
+    
+    # 3. Embed & Save to FAISS & backup
+    save_vector_store(chunks)
+    
+    # 4. Clean up temporary uploaded file
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        logger.info(f"Cleaned up temporary upload file: {file_path}")
+
 async def run_worker():
     logger.info("Initializing DocuSense consumer worker...")
     
@@ -66,29 +85,13 @@ async def run_worker():
                 
                 logger.info(f"Processing ingestion task {task_id} for file: {filename}")
                 
-                if not os.path.exists(file_path):
-                    logger.error(f"File not found at path: {file_path}")
-                    continue
-                
-                # 1. Parse document page-by-page or section-by-section
-                parsed_docs = parse_document(file_path, filename)
-                
-                # 2. Chunk document text
-                chunks = chunk_documents(parsed_docs)
-                
-                # 3. Embed & Save to FAISS & backup
-                save_vector_store(chunks)
+                process_document(file_path, filename)
                 
                 # Invalidate stale query caches since database is updated
                 try:
                     await redis_client.clear_cache_pattern("query_cache:*")
                 except Exception as ex:
                     logger.error(f"Failed to clear query cache: {ex}")
-                
-                # 4. Clean up temporary uploaded file from the shared uploads folder
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                    logger.info(f"Cleaned up temporary upload file: {file_path}")
                     
                 logger.info(f"Ingestion task {task_id} completed successfully.")
                 

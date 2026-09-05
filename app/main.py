@@ -44,8 +44,18 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request, BackgroundTasks
+from app.worker import process_document
+
+def process_document_fallback(file_path: str, filename: str):
+    try:
+        logger.info(f"Processing document via direct BackgroundTasks fallback: {filename}")
+        process_document(file_path, filename)
+    except Exception as err:
+        logger.error(f"Background worker fallback failed for {filename}: {err}")
+
 @app.post("/upload", status_code=202)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     filename = file.filename
     _, ext = os.path.splitext(filename.lower())
     if ext not in [".pdf", ".docx", ".doc"]:
@@ -63,7 +73,7 @@ async def upload_document(file: UploadFile = File(...)):
         logger.error(f"Failed to save uploaded file: {e}")
         raise HTTPException(status_code=500, detail="Failed to save uploaded file.")
         
-    # Enqueue embedding task asynchronously in Redpanda
+    # Enqueue embedding task in Redpanda, with direct BackgroundTasks fallback
     try:
         await redpanda_client.publish_ingestion_task(
             task_id=task_id,
@@ -71,17 +81,14 @@ async def upload_document(file: UploadFile = File(...)):
             filename=filename
         )
     except Exception as e:
-        logger.error(f"Failed to publish ingestion task: {e}")
-        # Clean up file on failure
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise HTTPException(status_code=500, detail="Failed to enqueue ingestion task.")
+        logger.warning(f"Redpanda broker unavailable ({e}). Falling back to direct BackgroundTasks ingestion...")
+        background_tasks.add_task(process_document_fallback, file_path, filename)
         
     return {
         "task_id": task_id,
         "status": "queued",
         "filename": filename,
-        "message": "Document uploaded successfully and enqueued for asynchronous processing."
+        "message": "Document uploaded successfully and enqueued for processing."
     }
 
 import json
