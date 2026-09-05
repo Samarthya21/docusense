@@ -235,7 +235,7 @@ with st.sidebar:
                     time.sleep(0.3)
                     progress_bar.progress(35, text="Parsing text & enqueuing task...")
                     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                    response = requests.post(f"{API_URL}/upload", files=files, timeout=10)
+                    response = requests.post(f"{API_URL}/upload", files=files, timeout=60)
                     
                     if response.status_code == 202:
                         data = response.json()
